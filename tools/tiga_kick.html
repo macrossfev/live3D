@@ -11,7 +11,7 @@
 </head><body><div id="hud">加载迪迦(Kicking)…</div><div id="tip">拖转 · 滚轮缩放</div>
 <script type="module">
 import * as THREE from 'three';
-import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const W = 620, H = 900;
 const r = new THREE.WebGLRenderer({ antialias: true });
@@ -28,28 +28,19 @@ ctl.target.set(0, 1.0, 0); cam.position.set(.8, 1.3, 3.8);
 const TL = new THREE.TextureLoader();
 const T = (u, nc) => { const t = TL.load(u); if (nc) t.colorSpace = THREE.NoColorSpace; else t.colorSpace = THREE.SRGBColorSpace; return t; };
 window.__stats = { stage: 'loading' };
-new FBXLoader().load('../assets/samples/Kicking.fbx', model => {
-  model.scale.setScalar(.01);                       // Mixamo 厘米 → 米
-  model.traverse(o => {
-    if (o.isSkinnedMesh){
-      o.material = new THREE.MeshStandardMaterial({
-        map: T('../assets/output/tiga_base1024.png'),   // 迪迦.png 才是真基色(RGB版是蓝底通道图)
-        emissiveMap: T('../assets/output/tiga_emis1024.png'),
-        emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 1.1,
-        normalMap: T('../assets/output/tiga_nrm1024.png', true),
-        roughness: .55, metalness: .05,
-      });
-      o.frustumCulled = false;
-    }
-  });
+new GLTFLoader().load('../assets/output/tiga_kick.glb', g => {
+  const model = g.scene;
+  model.traverse(o => { if (o.isSkinnedMesh) o.frustumCulled = false; });
   s.add(model);
   const mixer = new THREE.AnimationMixer(model);
-  mixer.clipAction(model.animations[0]).play();
-  window.__stats = { stage: 'ok', anim: model.animations[0].name + ' ' + model.animations[0].duration.toFixed(2) + 's',
+  mixer.clipAction(g.animations[0]).play();
+  window.__stats = { stage: 'ok', anim: g.animations[0].name + ' ' + g.animations[0].duration.toFixed(2) + 's',
                      mixerRunning: true };
-  document.getElementById('hud').textContent = '迪迦 · Kicking（Mixamo 原生绑骨 + 现场穿皮）\n动作: ' + window.__stats.anim;
+  document.getElementById('hud').textContent = '迪迦 · Kicking（法线修复 + 贴图烘焙一体）\n动作: ' + window.__stats.anim;
   document.title = 'OK';
   const clock = new THREE.Clock();
   (function loop(){ requestAnimationFrame(loop); mixer.update(clock.getDelta()); ctl.update(); r.render(s, cam); })();
-}, undefined, e => { document.getElementById('hud').textContent = '失败 ' + e; document.title = 'ERR'; });
+}, ev => {
+  if (ev.total) document.getElementById('hud').textContent = '下载模型… ' + Math.round(ev.loaded / ev.total * 100) + '%（' + (ev.total/1048576).toFixed(1) + 'MB）';
+}, e => { document.getElementById('hud').textContent = '失败 ' + e; document.title = 'ERR'; });
 </script></body></html>
