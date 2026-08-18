@@ -33,7 +33,7 @@ new FBXLoader().load('../assets/samples/Kicking.fbx', model => {
   model.traverse(o => {
     if (o.isSkinnedMesh){
       o.material = new THREE.MeshStandardMaterial({
-        map: T('../assets/output/tiga_rgb1024.png'),
+        map: T('../assets/output/tiga_base1024.png'),   // 迪迦.png 才是真基色(RGB版是蓝底通道图)
         emissiveMap: T('../assets/output/tiga_emis1024.png'),
         emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 1.1,
         normalMap: T('../assets/output/tiga_nrm1024.png', true),
