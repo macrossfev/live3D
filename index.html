@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>live3D — 2D 立绘 → Mixamo 可用 3D 模型</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
+<style>
+  :root{color-scheme:dark}
+  body{margin:0;font-family:system-ui,sans-serif;background:#0e1118;color:#dce3ee;line-height:1.7}
+  .wrap{max-width:880px;margin:0 auto;padding:40px 20px}
+  h1{font-size:28px;margin:0 0 6px}
+  .sub{color:#8fa3bd;margin:0 0 28px}
+  .card{background:#151a26;border:1px solid #232b3d;border-radius:12px;padding:20px 24px;margin:14px 0}
+  .card h2{font-size:17px;margin:0 0 10px;color:#7ec8ff}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  td,th{border:1px solid #232b3d;padding:6px 10px;text-align:left}
+  th{color:#8fa3bd;font-weight:600;background:#11151f}
+  code{background:#1a2230;padding:1px 6px;border-radius:4px;color:#9fd}
+  a{color:#7ec8ff}
+  .tag{display:inline-block;background:#1c2a3a;border-radius:6px;padding:1px 8px;font-size:12px;color:#9cc;margin-left:6px}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;font-size:14px}
+  .step{background:#1c2434;border:1px solid #2c3a52;border-radius:8px;padding:6px 12px}
+  .arr{color:#567}
+  footer{color:#567;font-size:12px;margin-top:36px;border-top:1px solid #232b3d;padding-top:14px}
+</style>
+</head>
+<body><div class="wrap">
+<h1>🧊 live3D</h1>
+<p class="sub">输入一张 2D 角色立绘（T-pose 透明 PNG）→ 输出 Mixamo 可自动绑骨、可驱动动画的 3D 模型</p>
+
+<div class="flow">
+  <span class="step">🖼️ 2D 立绘输入</span><span class="arr">→</span>
+  <span class="step">🦴 骨架底座（RPM 81骨 / 自建）</span><span class="arr">→</span>
+  <span class="step">🎨 立绘投影蒙皮</span><span class="arr">→</span>
+  <span class="step">📦 FBX / OBJ+贴图</span><span class="arr">→</span>
+  <span class="step">🎬 Mixamo 绑骨+动画</span>
+</div>
+
+<div class="card">
+<h2>三条已探路线</h2>
+<table>
+<tr><th>路线</th><th>工具</th><th>状态</th></tr>
+<tr><td>A · SDF 符号距离场</td><td><code>tools/gen_ultraman_obj.py</code></td><td>✅ 水密单网格产出</td></tr>
+<tr><td>B · Blender Skin + 烘焙</td><td><code>tools/gen_ultraman_blender_tpose.py</code></td><td>✅ 贴图烘焙链修通</td></tr>
+<tr><td>C · RPM 换体 + 投影蒙皮</td><td><a href="tools/rpm_ultraman.html">tools/rpm_ultraman.html</a>（在线演示）</td><td>🟡 骨架/动画✅ 外观迭代中</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>在线工具</h2>
+<table>
+<tr><td><a href="tools/rpm_ultraman.html">RPM 奥特曼演示</a></td><td>立绘投影蒙皮 + Mixamo 拳击动画（可拖转）</td></tr>
+<tr><td><a href="tools/rpm_viewer.html">RPM 模型探针</a></td><td>GLB 结构/骨骼/骨权重检视</td></tr>
+<tr><td><a href="tools/obj_view.html">OBJ 检视器</a></td><td>水密性/渲染探针（带自检 HUD）</td></tr>
+<tr><td><a href="tools/ultraman_preview.html">产物预览</a></td><td>Mixamo 上传件多视角预览</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>文档</h2>
+<table>
+<tr><td><a href="docs/SOP_pipeline.md">SOP_制作与验收</a><span class="tag">必读</span></td><td>五阶段流水线 + 验收门 G1-G7 + 头部方案决策实验</td></tr>
+<tr><td><a href="docs/SOP_mixamo.md">SOP_mixamo</a></td><td>Blender 建模 → Mixamo 绑骨操作规程</td></tr>
+</table>
+<p style="color:#8fa3bd;font-size:13px;margin:10px 0 0">素材示例：<code>assets/refs/</code>（6 英雄 T-pose 立绘）·
+<code>assets/output/</code>（历史产物）· 消费端游戏见 <code>../ultraman-web</code></p>
+</div>
+
+<footer>live3D · 粉丝向个人项目，立绘素材不得商用 · GitHub: macrossfev/live3d</footer>
+</div></body></html>
