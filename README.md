@@ -16,7 +16,18 @@
 | **输出** | FBX（首选）+ OBJ/MTL/贴图 ZIP；要求：单一人形网格、水密、A/T-pose、原点居中、脚踩 y=0、（可选）烘焙贴图 |
 | **验收** | 上传 [mixamo.com](https://www.mixamo.com) 自动绑骨成功 + 任选动画预览无破面，即为合格 |
 
-## 2. 三条已探路线（均有可运行产物）
+## 2. 定版流水线：Mixamo 动作一键处理 ⭐
+
+**DG 生成素材 → Mixamo 绑骨下载(With Skin) → 一条命令 → 单文件 GLB**（迪迦全链验证通过）：
+
+```bash
+python3 tools/mixamo_pipeline.py --fbx assets/samples/Kicking.fbx        --texdir "download/DG/贴图" --name tiga_kick --demo
+```
+
+自动：挑基色(排除蓝底通道图)/法线绕向修复/贴图降采样/动作重命名/自检/演示页。
+完整 SOP（人工步骤+坑清单+移植说明）：**`docs/SOP_mixamo_pipeline.md`**
+
+## 2b. 三条历史路线（已被上面取代，留档）
 
 | 路线 | 工具 | 产物 | 结论 |
 |---|---|---|---|

@@ -1,3 +1,23 @@
+## 2026-08-18 深夜 II · Mixamo 动作流水线定版（mixamo_pipeline.py）
+
+**里程碑**：迪迦全链跑通后，把处理环节固化为一键程序 + SOP。
+
+### 过程中的四连修
+1. jabcross（纯动作 FBX）→ 我自行绑骨（标准骨架+自动权重）→ **手脱节/装饰带钉死**——废案
+2. 改用 Kicking（With Skin 下载，Mixamo 原生权重）→ 正确
+3. 基色错用 `迪迦RGB.png`（实测均值 64,88,211 蓝底通道图）→ 换 `迪迦.png`
+4. **左半身+头不渲染** → AI 网格绕向翻转 → `normals_make_consistent` 根治；期间一次在 Blender 缩放把网格压成零点的废件教训（单位不动，交给 glTF 导出器）
+
+### 交付
+- `tools/mixamo_pipeline.py`：挑基色(蓝度排序)/法线修复/降采样/动作重命名/GLB 单文件/自检/演示页，零项目耦合可移植
+- `docs/SOP_mixamo_pipeline.md`：人工步骤(Mixamo With Skin 要点)+命令+验证标准+七坑清单
+- 端到端验收：tiga_kick_v2.glb 2.6MB，自检过，浏览器像素验证前景 5.6 万px/紫 1.6%/帧差 16.9%
+
+### 待办
+- 游戏集成（ultraman-web HERO3D 挂 GLB + 动作切换）——阶段 E
+- 六英雄量产（每英雄：DG 生成 → Mixamo 绑骨一次 → 每动作下载一份 → 跑程序）
+
+---
 ## 2026-08-18 深夜 · R2：身体找回 + 立绘量制头盔（HANDOFF_GLM_R2.md 执行轮）
 
 **任务来源**：`docs/HANDOFF_GLM_R2.md`——上一轮 A1/A2 双否（身体被掏空/A1 涂色人脸/A2 红蛋），本轮只走 S1→S2，十步执行，交包即停。
