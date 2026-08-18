@@ -73,9 +73,20 @@ import bpy, os, sys
 argv = dict(a.split('=', 1) for a in sys.argv[sys.argv.index('--') + 1:])
 FBX, OUT, NAME = argv['fbx'], argv['out'], argv['name']
 TEX = {k: v for k, v in argv.items() if k.startswith('tex_')}
+EXTRA = argv.get('extra', '')            # name=path|name=path 额外纯动作 FBX
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.fbx(filepath=FBX)
 mesh = next(o for o in bpy.context.scene.objects if o.type == 'MESH')
+arm = next(o for o in bpy.context.scene.objects if o.type == 'ARMATURE')
+# 额外动作并入（骨名同源 mixamorig，直接偷 action）
+for spec in [x for x in EXTRA.split('|') if x]:
+    nm, path = spec.split('=', 1)
+    before = set(a.name for a in bpy.data.actions)
+    bpy.ops.import_scene.fbx(filepath=path)
+    for o in [o for o in bpy.context.scene.objects if o.type == 'ARMATURE' and o != arm]:
+        bpy.data.objects.remove(o, do_unlink=True)
+    for a in bpy.data.actions:
+        if a.name not in before: a.name = nm
 
 # 法线绕向修复（AI 网格常有反向区 → 半边/头部不渲染）
 bpy.ops.object.select_all(action='DESELECT')
@@ -85,8 +96,9 @@ bpy.ops.mesh.select_all(action='SELECT')
 bpy.ops.mesh.normals_make_consistent(inside=False)
 bpy.ops.object.mode_set(mode='OBJECT')
 
-# 动作重命名（Mixamo 默认名不可读）
-for a in bpy.data.actions: a.name = NAME
+# 主动作命名（Mixamo 默认名不可读；额外动作已各自命名）
+for a in bpy.data.actions:
+        if a.name == 'Armature|mixamo.com|Layer0' or 'mixamo.com' in a.name: a.name = NAME
 
 # 材质
 mat = bpy.data.materials.new(NAME)
@@ -111,16 +123,23 @@ if nn:
 mesh.data.materials.clear(); mesh.data.materials.append(mat)
 bpy.ops.object.shade_smooth()
 
+# 全部动作压 NLA → 多动画 GLB
+if EXTRA:
+    arm.animation_data_create()
+    for a in bpy.data.actions:
+        tr = arm.animation_data.nla_tracks.new()
+        tr.name = a.name
+        tr.strips.new(a.name, int(a.frame_range[0]), a)
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.export_scene.gltf(filepath=OUT, export_format='GLB', export_animations=True)
 print('BLENDER_DONE')
 '''
 
-def run_blender(fbx, out, name, texs):
+def run_blender(fbx, out, name, texs, extra=''):
     with tempfile.NamedTemporaryFile('w', suffix='.py', delete=False) as f:
         f.write(BLENDER_SCRIPT); script = f.name
     argv = ['blender', '-b', '-P', script, '--',
-            f'fbx={fbx}', f'out={out}', f'name={name}'] + \
+            f'fbx={fbx}', f'out={out}', f'name={name}', f'extra={extra}'] + \
            [f'{k}={v}' for k, v in texs.items()]
     r = subprocess.run(argv, capture_output=True, text=True, timeout=900)
     os.unlink(script)
@@ -128,6 +147,47 @@ def run_blender(fbx, out, name, texs):
         print(r.stdout[-2000:]); print(r.stderr[-1000:])
         sys.exit('✗ Blender 处理失败')
     print('  Blender: 法线修复 + 材质 + 导出 ✓')
+
+BLENDER_MERGE_SCRIPT = r'''
+import bpy, os, sys
+argv = dict(a.split("=", 1) for a in sys.argv[sys.argv.index("--") + 1:])
+BASE, OUT = argv["base"], argv["out"]
+ANIMS = argv["anims"].split("|")          # name=path 多段
+bpy.ops.wm.read_factory_settings(use_empty=True)
+bpy.ops.import_scene.gltf(filepath=BASE)
+arm = next(o for o in bpy.context.scene.objects if o.type == "ARMATURE")
+for spec in ANIMS:
+    name, path = spec.split("=", 1)
+    before = set(a.name for a in bpy.data.actions)
+    bpy.ops.import_scene.fbx(filepath=path)
+    for o in [o for o in bpy.context.scene.objects if o.type == "ARMATURE" and o != arm]:
+        bpy.data.objects.remove(o, do_unlink=True)
+    for a in bpy.data.actions:
+        if a.name not in before: a.name = name
+print("MERGE_IMPORTED")
+# 全部动作压入 NLA → 导出为多动画 GLB
+arm.animation_data_create()
+for a in bpy.data.actions:
+    tr = arm.animation_data.nla_tracks.new()
+    tr.name = a.name
+    tr.strips.new(a.name, int(a.frame_range[0]), a)
+bpy.ops.object.select_all(action="SELECT")
+bpy.ops.export_scene.gltf(filepath=OUT, export_format="GLB", export_animations=True)
+print("BLENDER_DONE")
+'''
+
+def run_merge(base, out, anims):
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+        f.write(BLENDER_MERGE_SCRIPT); script = f.name
+    argv = ["blender", "-b", "-P", script, "--",
+            f"base={os.path.abspath(base)}", f"out={out}",
+            "anims=" + "|".join(f"{n}={os.path.abspath(p)}" for n, p in anims)]
+    r = subprocess.run(argv, capture_output=True, text=True, timeout=900)
+    os.unlink(script)
+    if "BLENDER_DONE" not in r.stdout:
+        print(r.stdout[-1500:]); print(r.stderr[-800:])
+        sys.exit("✗ Blender 合并失败")
+    print("  Blender: 动作合并入 NLA ✓")
 
 # ---------------------------------------------------------------- 产物自检
 def verify_glb(path):
@@ -199,21 +259,31 @@ def make_demo(name, glb_path):
 # ---------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description='Mixamo WithSkin FBX → 自包含 GLB')
-    ap.add_argument('--fbx', required=True, help='Mixamo 下载的 With Skin FBX')
-    ap.add_argument('--texdir', required=True, help='贴图目录')
+    ap.add_argument('--fbx', required=True, help='With Skin FBX；合并模式下可逗号分隔多个纯动作 FBX')
+    ap.add_argument('--texdir', default=None, help='贴图目录（全量模式必填）')
     ap.add_argument('--name', required=True, help='产物名（动作名/文件名）')
     ap.add_argument('--base', default=None, help='基色贴图文件名（默认自动挑）')
     ap.add_argument('--out', default=None, help='输出 GLB 路径')
     ap.add_argument('--demo', action='store_true', help='生成演示页')
+    ap.add_argument('--extra', default=None, help='额外纯动作 FBX 逗号分隔（与主 WithSkin FBX 并成一个多动作 GLB）')
     a = ap.parse_args()
     out = a.out or os.path.join(OUTDIR, f'{a.name}.glb')
     os.makedirs(OUTDIR, exist_ok=True)
     print(f"== mixamo_pipeline: {a.name} ==")
+    extra = ''
+    if a.extra:
+        parts = []
+        for f in a.extra.split(','):
+            f = f.strip()
+            if f: parts.append(os.path.splitext(os.path.basename(f))[0] + '=' + os.path.abspath(f))
+        extra = '|'.join(parts)
+    if not a.texdir:
+        sys.exit('✗ 全量模式需要 --texdir（或用 --rigbase 走合并模式）')
     with tempfile.TemporaryDirectory() as td:
         slots = classify_textures(a.texdir)
         texs = prep_textures(a.texdir, slots, a.base, td)
         texs = {'tex_' + k: v for k, v in texs.items()}
-        run_blender(os.path.abspath(a.fbx), out, a.name, texs)
+        run_blender(os.path.abspath(a.fbx), out, a.name, texs, extra)
     verify_glb(out)
     if a.demo: make_demo(a.name, out)
     print(f"✓ 完成: {out}")
