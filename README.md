@@ -25,6 +25,7 @@ python3 tools/mixamo_pipeline.py --fbx assets/samples/Kicking.fbx        --texdi
 ```
 
 自动：挑基色(排除蓝底通道图)/法线绕向修复/贴图降采样/动作重命名/自检/演示页。
+**多动作一次打包**：加 `--extra "动作1.fbx,动作2.fbx,..."` → 一个多动作 GLB（按 clip 切换）。
 完整 SOP（人工步骤+坑清单+移植说明）：**`docs/SOP_mixamo_pipeline.md`**
 
 ## 2b. 三条历史路线（已被上面取代，留档）

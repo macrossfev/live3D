@@ -48,6 +48,19 @@ python3 tools/mixamo_pipeline.py \
 #   --out /path/to/x.glb
 ```
 
+### 多动作一次打包（推荐）
+
+```bash
+python3 tools/mixamo_pipeline.py \
+    --fbx   assets/samples/Punching.fbx \
+    --texdir "download/DG/贴图" \
+    --name  punching \
+    --extra "assets/samples/Kicking.fbx,assets/samples/air-Kicking.fbx,assets/samples/strike_jog.fbx"
+```
+
+主 FBX（With Skin）出身体底版，`--extra` 里的 FBX（With/Without Skin 均可）只偷动作，
+NLA 并轨导出**一个多动作 GLB**；动作名取文件名。游戏/演示页按 clip 名切换。
+
 程序自动做六件事：
 1. **挑基色**（蓝度排序排除通道图；可 `--base` 覆盖）
 2. **法线绕向重算**（AI 网格反向区 → 半边/头不渲染的根治）
@@ -72,6 +85,11 @@ python3 tools/mixamo_pipeline.py \
 
 | 坑 | 规避 |
 |---|---|
+| Without Skin FBX 没网格（当底版用会崩） | `--extra` 只偷动作；底版必须 With Skin |
+| With Skin 的动作 FBX 带重复网格（多迪迦叠影/scale=100） | 并入时自动删多余 MESH/ARMATURE |
+| Mixamo 下载单位 cm/m 不一（模型变 15cm 或 30m） | 世界身高归一化（matrix_world 校正，不 apply） |
+| skinned mesh 的 bbox/缩放链自检都不可靠 | 双口径自检 + 浏览器像素实测兜底 |
+| Blender 3.4.1 glTF 导入器 + 新 numpy 崩 | 流水线不回读 GLB，从 FBX 一步重建 |
 | `xxRGB.png` 是蓝底通道图非基色 | 自动蓝度排序 + `--base` |
 | AI 网格绕向翻转（半边/头不渲染） | Blender `normals_make_consistent` |
 | 我自己绑骨（标准骨架+自动权重）→ 手脱节/饰件钉死 | **禁用**，必须 Mixamo With Skin 下载 |

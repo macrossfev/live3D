@@ -1,3 +1,38 @@
+## 2026-08-18 夜 III · 多动作包 + 流水线加固（--extra / 单位 / 重复网格）
+
+**任务**：用户调整 samples 动作（新 punching + Strike Foward Jog），按 1-4 切换展示；
+随后要求全部经验写入项目文档（本篇）。
+
+### 交付
+- `assets/output/tiga_motions.glb`（3.2MB，4 动作）：punching(主打 With Skin) + Kicking + air-Kicking + strike_jog
+- `tools/tiga_motions.html`：按 1-4 切动作演示台（底部按键条高亮当前）
+- 流水线 `tools/mixamo_pipeline.py` 三处加固（见下）；线上 v19
+
+### 本轮踩坑与解法（全部已固化进程序或 SOP）
+1. **Without Skin 的 FBX 没有网格** → 导入脚本报 StopIteration。解法：`--extra` 模式——
+   主 WithSkin FBX 做底版，纯动作 FBX 只偷 action（骨名同源 mixamorig 直接通用），
+   NLA 多轨导出多动画 GLB。用户下载全用 With Skin 也行，程序自动只留一个网格
+2. **Blender 3.4.1 glTF 导入器崩**（系统 numpy 废弃 `np.bool` 别名触发）→ 合并不回读 GLB，
+   改为从原始 WithSkin FBX 一次重建全流程（法线修复+穿皮+多动作并入一遍跑完）
+3. **With Skin 的 extra 会带重复网格**（曾导出 3 个迪迦叠一起，其中一个 scale=100）→
+   并入时删除额外的 MESH/ARMATURE 对象，只保留动作
+4. **Mixamo 下载单位不一**（cm/m 两套，同英雄不同次下载都可能不同）→
+   世界身高归一化（matrix_world 实测高度偏差>5% 即校正；只改 object.scale，绝不 transform_apply）
+5. **蒙皮网格的自检陷阱**：accessor 局部坐标、节点缩放链、Box3.setFromObject
+   三者对 skinned mesh 都不可靠（inverseBindMatrices 吸收骨架缩放）→
+   自检改双口径（局部或换算任一入 0.5-3m）+ **浏览器像素实测为最终裁决**
+6. 历史坑重申：transform_apply 顺序不当会把网格压成零点（bbox 全 0 废件）
+
+### 验收记录
+- tiga_motions.glb：自检过（局部 1.80m / 贴图 3 张全内嵌 / 动作 4 个）
+- 浏览器实测：人物占画高 99%、四动作帧差 13.5%、切换动作画面差异 14%+
+
+### 待办
+- 游戏集成（ultraman-web HERO3D 挂多动作 GLB + 招式映射）——整条链最后一块
+- 六英雄量产（每英雄：DG 生成 → Mixamo 绑骨 → 每动作下载 → 跑程序）
+
+---
+
 ## 2026-08-18 深夜 II · Mixamo 动作流水线定版（mixamo_pipeline.py）
 
 **里程碑**：迪迦全链跑通后，把处理环节固化为一键程序 + SOP。
