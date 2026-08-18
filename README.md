@@ -54,9 +54,11 @@ python3 -m http.server 8099 && 打开 tools/obj_view.html
 
 - ✅ 骨架与动画直通（路线 C 底座，Mixamo FBX 已验证驱动）
 - ✅ 身体投影蒙皮管线（像素实证：红盾/大腿红带落位）
-- ⏳ **头部方案决策实验**（`docs/SOP_pipeline.md` §5）：A1 UV 重绘 vs A2 几何替换，盲选出线；克隆壳路线已冻结
+- ✅ **头部决策实验已交付待盲选**（2026-08-18，见 `docs/acceptance/index.html` 与 `docs/WORKLOG.md`）：
+  A1 UV 重绘 vs A2 几何替换双盲选包 + 门禁脚本 `tools/acceptance_check.py`（G2/G3/G5/G6）
+- ⏳ 等用户盲选出线 → 阶段 D 动画精修；遗留：腰盆/大腿蒙皮偏暗、A2 前脸分区疑反
 - ⏳ 泛化：参数化"任意 2D 角色 → 模型"（当前以初代奥特曼为样例；`assets/refs/` 已有 6 英雄 T-pose 图）
-- ⏳ 验收门 G1-G7 脚本化（`tools/acceptance_check.py` 待建）
+- ⏳ G1/G4/G7 门禁补全（当前占位）
 
 ## 6. 目录结构
 
