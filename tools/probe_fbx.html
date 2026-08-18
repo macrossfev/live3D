@@ -1,0 +1,20 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><script type="importmap">{"imports":{
+"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+"three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}</script></head><body><script type="module">
+import * as THREE from 'three';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+const m = await new Promise((res, rej) => new FBXLoader().load('/assets/samples/Kicking.fbx', res, undefined, rej));
+const meshes = []; let bones = 0;
+m.traverse(o => {
+  if (o.isSkinnedMesh) meshes.push({name: o.name, verts: o.geometry.attributes.position.count,
+    uv: !!o.geometry.attributes.uv, mat: (o.material && o.material.map) ? 'hasMap' : 'noMap'});
+  if (o.isBone) bones++;
+});
+// bbox
+const box = new THREE.Box3().setFromObject(m);
+window.__probe = JSON.stringify({meshes, bones,
+  anims: (m.animations||[]).map(a => a.name + ' ' + a.duration.toFixed(2) + 's'),
+  bbox: box.min.toArray().map(v=>+v.toFixed(2)).concat(box.max.toArray().map(v=>+v.toFixed(2)))});
+document.title = 'PROBED';
+</script></body></html>
