@@ -3,6 +3,7 @@
 <style>body{margin:0;background:#0e1118;color:#dde;overflow-x:hidden}
 #hud{position:fixed;top:8px;left:8px;font:12px/1.6 monospace;color:#7ef;white-space:pre;z-index:9}
 #tip{position:fixed;bottom:8px;left:8px;font:12px monospace;color:#567;z-index:9}
+#tip2{position:fixed;bottom:26px;left:8px;font:12px monospace;color:#7ef;z-index:9}
 </style>
 <script type="importmap">{"imports":{
 "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -29,7 +30,7 @@ cam.position.set(.6, 1.3, 3.6);
 
 let mixer = null, actions = [];
 window.__stats = { stage: 'loading' };
-new GLTFLoader().load('../assets/output/tiga_rigged.glb', g => {
+new GLTFLoader().load('../assets/output/tiga_jabcross.glb', g => {
   const model = g.scene;
   model.scale.setScalar(1.8 / 2.08);          // 归一到 1.8m
   s.add(model);
@@ -37,17 +38,10 @@ new GLTFLoader().load('../assets/output/tiga_rigged.glb', g => {
   for (const clip of g.animations){
     actions.push({ clip, act: mixer.clipAction(clip) });
   }
-  actions.forEach((a, i) => a.act.play());
-  // 双动作交替：只激活一个，8 秒一切
-  let cur = 0;
-  actions.forEach((a, i) => a.act.setEffectiveWeight(i === 0 ? 1 : 0));
-  setInterval(() => {
-    cur = 1 - cur;
-    actions.forEach((a, i) => a.act.setEffectiveWeight(i === cur ? 1 : 0));
-  }, 8000);
+  actions.forEach(a => a.act.play());   // 单动作: jabcross 循环
   window.__stats = { stage: 'ok', anims: g.animations.map(a => a.name + ' ' + a.duration.toFixed(2) + 's') };
   document.getElementById('hud').textContent =
-    '迪迦 · 自动绑骨 + 贴图\n动作: ' + window.__stats.anims.join(' / ') + '\n每 8 秒自动切换（或按 1/2）';
+    '迪迦 · 动作 = ' + window.__stats.anims.join(' / ') + '\n（你放进 samples 的 jabcross，循环播放）';
   document.title = 'OK';
 }, undefined, e => { document.getElementById('hud').textContent = '失败 ' + e; document.title = 'ERR'; });
 addEventListener('keydown', e => {
