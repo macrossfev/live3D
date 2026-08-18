@@ -1,3 +1,31 @@
+## 2026-08-18 深夜 · R2：身体找回 + 立绘量制头盔（HANDOFF_GLM_R2.md 执行轮）
+
+**任务来源**：`docs/HANDOFF_GLM_R2.md`——上一轮 A1/A2 双否（身体被掏空/A1 涂色人脸/A2 红蛋），本轮只走 S1→S2，十步执行，交包即停。
+
+### 十步打勾
+1. ✅ 备份 `tools/archive/rpm_ultraman.html.bak-before-r2`
+2. ✅ `docs/acceptance/r2/mesh_list.json`——实证 R1 失败根因：**躯干/裤/脚体积在 Outfit 网格上**（Body 只到 y1.17，Top 补 0.75-1.37、Bottom 补裤、Footwear 补脚）
+3. ✅ 可见性重写：保留 Body+三件 Outfit 并上色；只藏发/镜/齿/眼球（禁止一刀切）
+4. ✅ 上色扩到 kept 全体（zCenter/SX 用全体重标定，SX 485→423）；透明底回落银/红，无黑顶点
+5. ✅ `body_front.png` + G2：**八带全过（盆 23.0% 腿 17.6%，上轮为 0）**，G3 全过（盆红 16.1%）
+6. ✅ `head_metrics.md`——classic.png 像素量测：头高 17.4cm/头宽 22.7cm/**单眼宽 7.4cm 双眼几乎贴中线**/眼在头高 40% 处
+7. ✅ `tools/gen_helmet_r2.py` → `helmet_r2.glb`（1512 顶点 0 非流形）；**导出后 glTF 前脸银 54% ✓**（新增导出后判据检查脚本段）
+8. ✅ `?head=r2` 挂盔 + 藏 Wolf3D_Head
+9. ✅ `docs/acceptance/r2/` 八视角 + compare_body/compare 对照板 + report.json
+10. ✅ NOTES.md 交包，停（未发线上）
+
+### 门禁（front，阈值未改）
+G2 全过 | G3 全过 | G6 过 | G5 ✗0.245%（非人脸：head=none 同值的暖色身体像素检测误报，已在 report.notes 记录）| top/bottom 视角 G2 口径限制
+
+### 本轮新增工程事实
+- RPM 可见人体 = Body(四肢+下躯) + Outfit_Top(上胸肩) + Outfit_Bottom(盆腿) + Footwear(脚)——**隐藏任何一件就缺一段**
+- glTF 导出后分区判据核查法：按 primitive 分材质数前向面（normal.z>0.3）占比，20 行 python，已用于头盔出厂检查
+- 立绘双眼特征：单眼 7.4cm、内缘几乎贴中线、外眼角上挑 ~15°——灯罩眼是初代辨识度核心
+
+### 状态
+交包等用户看图（`docs/acceptance/r2/compare.png`）。十步完成即停，未做：page-publish、游戏接入、六英雄换皮（交接单 §7 禁项）。
+
+---
 # live3D 工作日志
 
 > 按轮次记录：任务来源、交付物、门禁数字、踩坑与解法。新条目加在最上面。

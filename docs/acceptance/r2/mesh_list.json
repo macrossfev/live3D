@@ -1,0 +1,245 @@
+{
+ "source": "avatar_full.glb",
+ "filter": "index-referenced + 0<y<2.2 + |x|<1.2",
+ "meshes": [
+  {
+   "name": "EyeLeft",
+   "verts": 120,
+   "used": 120,
+   "bbox": {
+    "x": [
+     -0.06,
+     -0.02
+    ],
+    "y": [
+     1.35,
+     1.38
+    ],
+    "z": [
+     0.84,
+     0.87
+    ]
+   },
+   "dominantBones": [
+    "Left:120"
+   ],
+   "role": "eyeball(hide)"
+  },
+  {
+   "name": "EyeRight",
+   "verts": 120,
+   "used": 120,
+   "bbox": {
+    "x": [
+     -0.12,
+     -0.08
+    ],
+    "y": [
+     1.35,
+     1.39
+    ],
+    "z": [
+     0.82,
+     0.85
+    ]
+   },
+   "dominantBones": [
+    "Right:120"
+   ],
+   "role": "eyeball(hide)"
+  },
+  {
+   "name": "Wolf3D_Head",
+   "verts": 2123,
+   "used": 2123,
+   "bbox": {
+    "x": [
+     -0.13,
+     0.07
+    ],
+    "y": [
+     1.22,
+     1.52
+    ],
+    "z": [
+     0.6,
+     0.91
+    ]
+   },
+   "dominantBones": [
+    "Head:1968",
+    "Neck:107",
+    "Spine2:24"
+   ],
+   "role": "head(S2后藏)"
+  },
+  {
+   "name": "Wolf3D_Teeth",
+   "verts": 84,
+   "used": 84,
+   "bbox": {
+    "x": [
+     -0.09,
+     -0.03
+    ],
+    "y": [
+     1.29,
+     1.35
+    ],
+    "z": [
+     0.77,
+     0.83
+    ]
+   },
+   "dominantBones": [
+    "Head:84"
+   ],
+   "role": "teeth(hide)"
+  },
+  {
+   "name": "Wolf3D_Hair",
+   "verts": 809,
+   "used": 809,
+   "bbox": {
+    "x": [
+     -0.16,
+     0.05
+    ],
+    "y": [
+     1.36,
+     1.55
+    ],
+    "z": [
+     0.69,
+     0.94
+    ]
+   },
+   "dominantBones": [
+    "Head:809"
+   ],
+   "role": "hair(hide)"
+  },
+  {
+   "name": "Wolf3D_Glasses",
+   "verts": 1162,
+   "used": 1162,
+   "bbox": {
+    "x": [
+     -0.15,
+     0.04
+    ],
+    "y": [
+     1.32,
+     1.44
+    ],
+    "z": [
+     0.74,
+     0.9
+    ]
+   },
+   "dominantBones": [
+    "Head:1162"
+   ],
+   "role": "glasses(hide)"
+  },
+  {
+   "name": "Wolf3D_Outfit_Top",
+   "verts": 735,
+   "used": 735,
+   "bbox": {
+    "x": [
+     -0.12,
+     0.27
+    ],
+    "y": [
+     0.75,
+     1.37
+    ],
+    "z": [
+     0.35,
+     0.96
+    ]
+   },
+   "dominantBones": [
+    "Right:163",
+    "Left:163",
+    "Hips:162"
+   ],
+   "role": "clothes(keep+paint)"
+  },
+  {
+   "name": "Wolf3D_Outfit_Bottom",
+   "verts": 2523,
+   "used": 2523,
+   "bbox": {
+    "x": [
+     -0.18,
+     0.24
+    ],
+    "y": [
+     0.22,
+     0.89
+    ],
+    "z": [
+     -0.06,
+     1.03
+    ]
+   },
+   "dominantBones": [
+    "Hips:1018",
+    "Left:761",
+    "Right:744"
+   ],
+   "role": "clothes(keep+paint)"
+  },
+  {
+   "name": "Wolf3D_Outfit_Footwear",
+   "verts": 962,
+   "used": 962,
+   "bbox": {
+    "x": [
+     -0.24,
+     0.35
+    ],
+    "y": [
+     0.01,
+     0.21
+    ],
+    "z": [
+     -0.25,
+     1.14
+    ]
+   },
+   "dominantBones": [
+    "Right:481",
+    "Left:481"
+   ],
+   "role": "clothes(keep+paint)"
+  },
+  {
+   "name": "Wolf3D_Body",
+   "verts": 3310,
+   "used": 3310,
+   "bbox": {
+    "x": [
+     -0.12,
+     0.31
+    ],
+    "y": [
+     0.1,
+     1.17
+    ],
+    "z": [
+     -0.16,
+     1.11
+    ]
+   },
+   "dominantBones": [
+    "Right:1655",
+    "Left:1655"
+   ],
+   "role": "body(keep+paint)"
+  }
+ ],
+ "verdict": "躯干/盆/腿体积在 Outfit_* + Body 上，全部保留上色"
+}

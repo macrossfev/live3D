@@ -1,0 +1,83 @@
+{
+ "round": "r2",
+ "gates_front": {
+  "file": "docs/acceptance/r2/front.png",
+  "view": "front",
+  "size": "1240x1800",
+  "gates": {
+   "G2": {
+    "pass": true,
+    "bands": {
+     "head": 0.078,
+     "shoulder": 0.192,
+     "chest": 0.334,
+     "waist": 0.297,
+     "pelvis": 0.23,
+     "thigh": 0.176,
+     "shin": 0.18,
+     "foot": 0.042
+    }
+   },
+   "G3": {
+    "pass": true,
+    "red_by_band": {
+     "shoulder": 0.0702,
+     "chest": 0.1364,
+     "pelvis": 0.1606,
+     "shin": 0.0003
+    }
+   },
+   "G5": {
+    "pass": false,
+    "skin_pct": 0.00245
+   },
+   "G6": {
+    "pass": true,
+    "figure_mode_share": 0.099,
+    "mean_lum": 85.6
+   }
+  },
+  "figure_bbox": [
+   205,
+   1799
+  ]
+ },
+ "views": {
+  "back": {
+   "G2": true,
+   "G5": true,
+   "G6": true
+  },
+  "left": {
+   "G2": true,
+   "G5": true,
+   "G6": true
+  },
+  "right": {
+   "G2": true,
+   "G5": true,
+   "G6": true
+  },
+  "q34_left": {
+   "G2": true,
+   "G5": false,
+   "G6": true
+  },
+  "q34_right": {
+   "G2": true,
+   "G5": false,
+   "G6": true
+  },
+  "top": {
+   "G2": false,
+   "G5": true,
+   "G6": true
+  },
+  "bottom": {
+   "G2": false,
+   "G5": false,
+   "G6": true
+  }
+ },
+ "notes": "G5=0.24%为身体暖色投影像素的检测误报(head=none同值), 非人脸"
+}

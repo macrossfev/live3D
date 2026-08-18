@@ -86,7 +86,7 @@ window.__freeze = () => {
   // 实测：mixer.setTime/update 后早期材质失效——冻结时重建 vertexColors 材质再渲染
   if (window.__model){
     window.__model.traverse(o => {
-      if (o.isSkinnedMesh && o.geometry.attributes.color && o.visible){
+      if (o.isSkinnedMesh && o.geometry.attributes.color){
         o.material = new THREE.MeshToonMaterial({ vertexColors: true });
       }
     });
@@ -163,27 +163,17 @@ async function main(){
     }
     return out;
   }
-  // R2: 完整身体 = Body + Outfit 件（mesh_list.json 实证：躯干/裤/脚体积在衣服上）
-  const KEEP_RX = /Outfit|Body/i;
-  const kept = [];
-  model.traverse(o => { if (o.isSkinnedMesh && KEEP_RX.test(o.name || '')) kept.push(o); });
-  const keptW = new Map(), keptRef = new Map();
+  const vw = worldOf(body);
+  const idx = body.geometry.index.array;
+  const refd = new Set();
+  for (let t = 0; t < idx.length; t++) refd.add(idx[t]);
+  // GLB 里有孤立垃圾顶点（y=176 等）：只统计合理范围
   let hMin = 1e9, hMax = -1e9;
-  for (const o of kept){
-    const w = worldOf(o);
-    keptW.set(o, w);
-    const ix = o.geometry.index ? o.geometry.index.array : null;
-    const st = ix ? new Set(ix) : null;
-    keptRef.set(o, st);
-    for (let i = 0; i < o.geometry.attributes.position.count; i++){
-      if (st && !st.has(i)) continue;
-      const wy = w[i*3+1], wx = w[i*3];
-      if (wy < 0 || wy > 2.2 || Math.abs(wx) > 1.2) continue;
-      if (wy < hMin) hMin = wy; if (wy > hMax) hMax = wy;
-    }
+  for (const i of refd){
+    const wy = vw[i*3+1], wx = vw[i*3];
+    if (wy < 0 || wy > 2.2 || Math.abs(wx) > 1.2) continue;
+    if (wy < hMin) hMin = wy; if (wy > hMax) hMax = wy;
   }
-  const vw = keptW.get(body);
-  const refd = keptRef.get(body) || new Set();
 
   // ---------- 骨骼锚点标定（世界 Y） ----------
   const B = n => model.getObjectByName(n);
@@ -201,56 +191,48 @@ async function main(){
   const Z2Y = [[hMin, 1119], [ankle.y, 1019], [knee.y, 795], [hips.y, 591],
                [spine2.y, 472], [shoulder.y, 430], [neck.y, 361], [head.y, 336], [headMaxY, 268]];
   let pelvisHalf = 0;
-  for (const o of kept){
-    const w = keptW.get(o), st = keptRef.get(o);
-    for (let i = 0; i < o.geometry.attributes.position.count; i++){
-      if (st && !st.has(i)) continue;
-      const wy = w[i*3+1], wx = Math.abs(w[i*3]);
-      if (Math.abs(wy - hips.y) < .05 && wx > pelvisHalf && wx < .3) pelvisHalf = wx;
-    }
+  for (const i of refd){
+    const wy = vw[i*3+1], wx = Math.abs(vw[i*3]);
+    if (Math.abs(wy - hips.y) < .05 && wx > pelvisHalf && wx < .3) pelvisHalf = wx;
   }
   const SX = 165 / (2 * (pelvisHalf || .17));   // 立绘盆行 165px ↔ 人体盆宽
 
-  // ---------- 上色（R2: kept 全体——手臂骨色 / 正面投影 / 背面程序纹） ----------
+  // ---------- 身体上色：正面立绘投影 / 背面程序纹 ----------
   {
+    // 逐顶点主骨名（手臂是 A-pose，立绘是 T-pose → 手臂只能骨权重配色）
+    const bsi = body.geometry.attributes.skinIndex, bsw = body.geometry.attributes.skinWeight;
+    const boneList = body.skeleton.bones;
+    const domName = new Array(body.geometry.attributes.position.count).fill('');
+    for (const i of refd){
+      let best = 0, bw = -1;
+      for (let k = 0; k < 4; k++){ const w = comp(bsw, i, k); if (w > bw){ bw = w; best = comp(bsi, i, k); } }
+      domName[i] = boneList[best] ? boneList[best].name : '';
+    }
+    // 每高度带的世界 z 中心（正/背面判据，不用局部法线）
     const NB = 24, zSum = new Float32Array(NB), zCnt = new Float32Array(NB);
-    for (const o of kept){
-      const w = keptW.get(o), st = keptRef.get(o);
-      for (let i = 0; i < o.geometry.attributes.position.count; i++){
-        if (st && !st.has(i)) continue;
-        const wy = w[i*3+1], wx = w[i*3];
-        if (wy < 0 || wy > 2.2 || Math.abs(wx) > 1.2) continue;
-        const bI = Math.min(NB - 1, Math.max(0, Math.floor(wy / 1.9 * NB)));
-        zSum[bI] += w[i*3+2]; zCnt[bI]++;
-      }
+    for (const i of refd){
+      const h = vw[i*3+1];
+      const bI = Math.min(NB - 1, Math.max(0, Math.floor(h / 1.8 * NB)));
+      zSum[bI] += vw[i*3+2]; zCnt[bI]++;
     }
     const zCenter = h => {
-      const bI = Math.min(NB - 1, Math.max(0, Math.floor(h / 1.9 * NB)));
+      const bI = Math.min(NB - 1, Math.max(0, Math.floor(h / 1.8 * NB)));
       return zCnt[bI] ? zSum[bI] / zCnt[bI] : 0;
     };
-    for (const o of kept){
-      const w = keptW.get(o), st = keptRef.get(o);
-      const bsi = o.geometry.attributes.skinIndex, bsw = o.geometry.attributes.skinWeight;
-      const boneList = o.skeleton.bones;
-      const col = new Float32Array(o.geometry.attributes.position.count * 3);
-      for (let i = 0; i < o.geometry.attributes.position.count; i++){
-        if (st && !st.has(i)) continue;
-        let best = 0, bw = -1;
-        for (let k = 0; k < 4; k++){ const w2 = comp(bsw, i, k); if (w2 > bw){ bw = w2; best = comp(bsi, i, k); } }
-        const bn = boneList[best] ? boneList[best].name : '';
-        const x = w[i*3], h = w[i*3+1], wz = w[i*3+2];
-        let c;
-        if (/Shoulder|Clav|Arm(Twist)?$/i.test(bn)) c = RED;
-        else if (/ForeArm|Hand|Twitch|Twist/i.test(bn)) c = SILVER;
-        else if (wz > zCenter(h) - .015 && h < head.y - .01) c = sampleRef(x, h, Z2Y, SX);
-        if (!c) c = backColor(x, h, bones);
-        col[i*3] = c[0]; col[i*3+1] = c[1]; col[i*3+2] = c[2];
-      }
-      o.geometry.setAttribute('color', new THREE.BufferAttribute(col, 3));
-      o.material = new THREE.MeshToonMaterial({ vertexColors: true });
-      o.frustumCulled = false;
-      o.visible = true;
+    const col = new Float32Array(body.geometry.attributes.position.count * 3);
+    for (const i of refd){
+      const bn = domName[i];
+      const x = vw[i*3], h = vw[i*3+1], wz = vw[i*3+2];
+      let c;
+      if (/Shoulder|Clav|Arm(Twist)?$/i.test(bn)) c = RED;                 // 肩+上臂红
+      else if (/ForeArm|Hand|Twitch|Twist/i.test(bn)) c = SILVER;         // 前臂+手银
+      else if (wz > zCenter(h) - .015 && h < head.y - .01) c = sampleRef(x, h, Z2Y, SX);  // 正面
+      if (!c) c = backColor(x, h, bones);
+      col[i*3] = c[0]; col[i*3+1] = c[1]; col[i*3+2] = c[2];
     }
+    body.geometry.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    body.material = new THREE.MeshToonMaterial({ vertexColors: true });
+    body.frustumCulled = false;
   }
 
   // ---------- 头部方案（?head=a1|a2|none） ----------
@@ -315,25 +297,6 @@ async function main(){
     headMesh.frustumCulled = false;
     headMesh.visible = true;
     headInfo = 'a1';
-  } else if (HEAD === 'r2' && headBone2){
-    // R2: 按立绘量制的头盔（head_metrics.md），藏人头
-    if (headMesh) headMesh.visible = false;
-    const glb = await new Promise((res, rej) => new GLTFLoader().load('../assets/output/helmet_r2.glb', res, undefined, rej));
-    const helmet = glb.scene;
-    const hw2 = worldOf(headMesh || body);
-    let cy2 = head.y + .02, cz2 = .012, n2 = 0;
-    if (headMesh){
-      for (let i = 0; i < headMesh.geometry.attributes.position.count; i++){
-        const y = hw2[i*3+1];
-        if (y > 1.2 && y < 2.2 && Math.abs(hw2[i*3]) < .4){ cy2 += hw2[i*3+1]; cz2 += hw2[i*3+2]; n2++; }
-      }
-      if (n2){ cy2 /= (n2 + 1); cz2 /= (n2 + 1); }
-    }
-    const wp = new THREE.Vector3(0, cy2, cz2);
-    headBone2.worldToLocal(wp);
-    helmet.position.copy(wp);
-    headBone2.add(helmet);
-    headInfo = 'r2';
   } else if (HEAD === 'a2' && headBone2){
     if (headMesh) headMesh.visible = false;
     const glb = await new Promise((res, rej) => new GLTFLoader().load('../assets/output/helmet_a2.glb', res, undefined, rej));
@@ -359,9 +322,7 @@ async function main(){
   // ---------- 隐藏其余裸网格 ----------
   let hidden = 0;
   model.traverse(o => {
-    if (o.isSkinnedMesh && !KEEP_RX.test(o.name || '') && !(HEAD === 'a1' && o === headMesh)){
-      o.visible = false; hidden++;
-    }
+    if (o.isSkinnedMesh && o !== body && !(HEAD === 'a1' && o === headMesh)){ o.visible = false; hidden++; }
   });
 
   // ---------- 计时器（挂 Spine2 胸口） ----------
