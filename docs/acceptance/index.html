@@ -1,0 +1,52 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>头部盲选 · 样品 A / B</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎭</text></svg>">
+<style>
+:root{color-scheme:dark}
+body{margin:0;font-family:system-ui,sans-serif;background:#0e1118;color:#dce3ee}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 18px}
+h1{font-size:22px} .sub{color:#8fa3bd;font-size:14px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.cols{grid-template-columns:1fr}}
+.card{background:#151a26;border:1px solid #232b3d;border-radius:12px;padding:14px}
+.card h2{font-size:16px;margin:0 0 4px;color:#7ec8ff}
+.card .desc{font-size:13px;color:#8fa3bd;margin:0 0 10px;line-height:1.6}
+img.w{width:100%;border-radius:8px;display:block;background:#0b0e14}
+.views{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.views img{width:100%;border-radius:4px;display:block}
+a{color:#7ec8ff}
+.check{background:#11151f;border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.9;margin-top:12px}
+.check b{color:#ffd34d}
+footer{color:#567;font-size:12px;margin-top:24px;border-top:1px solid #232b3d;padding-top:12px}
+</style></head><body><div class="wrap">
+<h1>🎭 头部方案盲选</h1>
+<p class="sub">同一身体 / 相机 / 光照，仅头不同。先看对照板（左立绘右渲染，黄线=眼/肩/膝对位），再看各视角。<b>裁决归你</b>。</p>
+<div class="cols">
+  <div class="card">
+    <h2>样品 A（目录 head-a1 · UV 重绘）</h2>
+    <p class="desc">保留人头几何 + 贴图上色。<b>重点看侧视</b>：鼻/耳轮廓是否从银面凸出。</p>
+    <a href="head-a1/compare.png"><img class="w" src="head-a1/compare.png" alt="A 对照板"></a>
+    <div class="views">
+      <img src="head-a1/front.png" alt=""><img src="head-a1/left.png" alt=""><img src="head-a1/right.png" alt=""><img src="head-a1/back.png" alt="">
+      <img src="head-a1/q34_left.png" alt=""><img src="head-a1/q34_right.png" alt=""><img src="head-a1/top.png" alt=""><img src="head-a1/bottom.png" alt="">
+    </div>
+    <p class="desc">大图：<a href="head-a1/front.png">正</a> <a href="head-a1/left.png">左</a> <a href="head-a1/right.png">右</a> · <a href="head-a1/report.json">门禁数字</a> · <a href="../../tools/rpm_ultraman.html?head=a1">交互演示</a></p>
+  </div>
+  <div class="card">
+    <h2>样品 B（目录 head-a2 · 几何替换）</h2>
+    <p class="desc">隐藏人头 + Blender 椭球组合头盔。<b>重点看正面</b>：盔型/眼/下颚红。</p>
+    <a href="head-a2/compare.png"><img class="w" src="head-a2/compare.png" alt="B 对照板"></a>
+    <div class="views">
+      <img src="head-a2/front.png" alt=""><img src="head-a2/left.png" alt=""><img src="head-a2/right.png" alt=""><img src="head-a2/back.png" alt="">
+      <img src="head-a2/q34_left.png" alt=""><img src="head-a2/q34_right.png" alt=""><img src="head-a2/top.png" alt=""><img src="head-a2/bottom.png" alt="">
+    </div>
+    <p class="desc">大图：<a href="head-a2/front.png">正</a> <a href="head-a2/left.png">左</a> <a href="head-a2/right.png">右</a> · <a href="head-a2/report.json">门禁数字</a> · <a href="../../tools/rpm_ultraman.html?head=a2">交互演示</a></p>
+  </div>
+</div>
+<div class="check">
+<b>脸部 checklist（每项 ✓/✗）</b>：□ 盔型/头冠脊 □ 眼睛（大小/杏仁形/上挑/发光） □ 下颚红区位置形状 □ 无肤色露出 □ 不挡身体<br>
+注：腰盆/大腿偏暗为两样品共用的身体蒙皮瑕疵（非头路线差异），裁决头部时请忽略。
+</div>
+<footer>live3D · docs/acceptance · 制作方不宣布结论，盲选胜者进阶段 D</footer>
+</div></body></html>
