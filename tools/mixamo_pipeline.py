@@ -76,14 +76,32 @@ TEX = {k: v for k, v in argv.items() if k.startswith('tex_')}
 EXTRA = argv.get('extra', '')            # name=path|name=path 额外纯动作 FBX
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.fbx(filepath=FBX)
-mesh = next(o for o in bpy.context.scene.objects if o.type == 'MESH')
+meshes_all = [o for o in bpy.context.scene.objects if o.type == 'MESH']
+mesh = next(o for o in meshes_all if any(m.type == 'ARMATURE' for m in o.modifiers))
+for o in meshes_all:                      # FBX 常带重复网格副本（scale 100 残留）
+    if o != mesh:
+        bpy.data.objects.remove(o, do_unlink=True)
 arm = next(o for o in bpy.context.scene.objects if o.type == 'ARMATURE')
+
+# 身高归一化：Mixamo 下载单位不一（cm/m），统一到 ~1.8m。
+# 只设 object.scale，绝不动 transform_apply（历史坑：apply 会把网格压成零点）
+zs = [mesh.matrix_world @ v.co for v in mesh.data.vertices]
+h = max(w.z for w in zs) - min(w.z for w in zs)
+if abs(h - 1.8) > 0.05 and h > 0.01:      # 世界身高偏差>5% 即校正（FBX 单位 cm/m 二次换算坑）
+    k = 1.8 / h
+    for o in (mesh, arm):
+        o.scale = (o.scale[0]*k, o.scale[1]*k, o.scale[2]*k)
+    bpy.context.view_layer.update()
+    print(f'NORMALIZED height {h:.4f}m -> 1.8m (x{k:.2f})')
+
 # 额外动作并入（骨名同源 mixamorig，直接偷 action）
 for spec in [x for x in EXTRA.split('|') if x]:
     nm, path = spec.split('=', 1)
     before = set(a.name for a in bpy.data.actions)
     bpy.ops.import_scene.fbx(filepath=path)
-    for o in [o for o in bpy.context.scene.objects if o.type == 'ARMATURE' and o != arm]:
+    # 只偷动作：并入的骨架和网格全删（With Skin 的 extra 会带重复网格）
+    for o in [o for o in bpy.context.scene.objects
+              if (o.type == 'ARMATURE' and o != arm) or (o.type == 'MESH' and o != mesh)]:
         bpy.data.objects.remove(o, do_unlink=True)
     for a in bpy.data.actions:
         if a.name not in before: a.name = nm
@@ -197,17 +215,31 @@ def verify_glb(path):
         clen, ct = struct.unpack('<II', data[pos:pos+8])
         chunks.append(data[pos+8:pos+8+clen]); pos += 8+clen
     j = json.loads(chunks[0])
-    bbox = None
-    for mesh in j.get('meshes', []):
+    # 真实身高 = 局部 bbox × 节点缩放链（Mixamo 单位不一，局部坐标会骗人）
+    nodes = {i: n for i, n in enumerate(j.get('nodes', []))}
+    parent = {}
+    for i, n in nodes.items():
+        for c in n.get('children', []): parent[c] = i
+    def world_scale(ni):
+        k = 1.0
+        while ni is not None:
+            k *= nodes[ni].get('scale', [1, 1, 1])[1]
+            ni = parent.get(ni)
+        return k
+    bbox, h_real = None, 0
+    for mi, mesh in enumerate(j.get('meshes', [])):
         for prim in mesh.get('primitives', []):
             acc = j['accessors'][prim['attributes']['POSITION']]
             mn, mx = acc.get('min'), acc.get('max')
             bbox = (mn, mx)
+            own = next((i for i, n in nodes.items() if n.get('mesh') == mi), None)
+            h_real = max(h_real, (mx[1] - mn[1]) * world_scale(own))
     imgs = j.get('images', [])
     anims = j.get('animations', [])
-    ok = (bbox and 0 < bbox[1][1] < 3.0 and len(imgs) >= 1
+    h_local = bbox[1][1] - bbox[0][1] if bbox else 0
+    ok = (bbox and (0.5 < h_local < 3.0 or 0.5 < h_real < 3.0) and len(imgs) >= 1
           and all('bufferView' in i for i in imgs) and len(anims) >= 1)
-    print(f"  自检: bbox y[{bbox[0][1]:.2f},{bbox[1][1]:.2f}]m | 贴图{len(imgs)}张全内嵌 | 动作{len(anims)}个 | {len(data)//1024}KB")
+    print(f"  自检: 身高局部 {h_local:.2f}m / 换算 {h_real:.2f}m（蒙皮网格以后者为准需浏览器实测）| 贴图{len(imgs)}张全内嵌 | 动作{len(anims)}个 | {len(data)//1024}KB")
     if not ok: sys.exit('✗ 自检未过（bbox/贴图/动作异常）')
     print('  ✓ 自检通过')
 
