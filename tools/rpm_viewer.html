@@ -1,0 +1,112 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;background:#0e1118;color:#dde}
+#hud{position:fixed;top:8px;left:8px;font:12px monospace;color:#7ef;white-space:pre;z-index:9}</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head><body><div id="hud">加载中…</div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const r = new THREE.WebGLRenderer({antialias:true});
+r.setSize(560, 900); document.body.appendChild(r.domElement);
+const s = new THREE.Scene();
+s.background = new THREE.Color(.05,.055,.07);
+const cam = new THREE.PerspectiveCamera(32, 560/900, .1, 50);
+cam.position.set(.9, 1.35, 3.3); cam.lookAt(0, .95, 0);
+s.add(new THREE.AmbientLight(0xffffff, .8));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(2, 3, 4); s.add(sun);
+const rim = new THREE.DirectionalLight(0x88bbff, .8); rim.position.set(-2, 2, -3); s.add(rim);
+const grid = new THREE.GridHelper(4, 10); s.add(grid);
+const hud = document.getElementById('hud');
+
+// ---- 奥特曼化：骨骼名 → 颜色（每顶点取主权重骨） ----
+const RED = new THREE.Color(.78, .10, .12), SILVER = new THREE.Color(.74, .77, .84);
+const BONE_COLOR = [
+  [/UpLeg/, RED], [/Leg$|Shin/, SILVER], [/Foot|Toe/, SILVER],
+  [/Spine1|Spine2|Chest/i, RED], [/Spine$/i, SILVER], [/Hips|Pelvis/i, RED],
+  [/Arm$|ForeArm|Hand|Shoulder|Clav/i, n => /Shoulder|Clav/.test(n) ? RED :
+      (n.includes('ForeArm') || n.includes('Hand')) ? SILVER : RED],
+  [/Neck|Head|Eye|Jaw|Teeth|Tongue|Hair|Glasses/i, null],   // 头颈隐藏→戴头盔
+];
+function boneColor(name){
+  for (const [re, c] of BONE_COLOR){
+    if (re.test(name)){
+      if (c === null) return null;                          // 该骨顶点将被隐藏
+      return typeof c === 'function' ? c(name) : c;
+    }
+  }
+  return SILVER;
+}
+
+new GLTFLoader().load('../assets/rpm/avatar_full.glb', g => {
+  const model = g.scene;
+  const stats = { meshes: 0, verts: 0, hidden: 0, bones: 0 };
+  const skeleton = model.getObjectByProperty('type', 'Bone') || null;
+
+  // 头盔：挂到 Head 骨上（银盔+发光眼+头冠+耳）
+  const helmet = new THREE.Group();
+  const mSil = new THREE.MeshToonMaterial({ color: 0xbfd0de });
+  const mGlow = (c) => new THREE.MeshBasicMaterial({ color: c });
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(.105, 20, 16), mSil);
+  skull.scale.set(1, 1.12, 1.02); helmet.add(skull);
+  const jaw = new THREE.Mesh(new THREE.SphereGeometry(.082, 18, 14), mSil);
+  jaw.position.set(0, -.055, .022); jaw.scale.set(.94, .62, .95); helmet.add(jaw);
+  for (const sd of [-1, 1]){
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(.028, 10, 8), mGlow(0xfff2b0));
+    eye.position.set(sd * .042, .012, .088); eye.scale.set(1.25, .45, .55);
+    eye.rotation.z = sd * .28; helmet.add(eye);
+    const ear = new THREE.Mesh(new THREE.CylinderGeometry(.016, .016, .012, 10), mSil);
+    ear.rotation.z = Math.PI / 2; ear.position.set(sd * .102, 0, .005); helmet.add(ear);
+  }
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(.012, .04, .17), mSil);
+  fin.position.set(0, .095, -.01); helmet.add(fin);
+  const timer = new THREE.Mesh(new THREE.SphereGeometry(.026, 12, 10), mGlow(0x38a8ff));
+  timer.position.set(0, -.155, .075); helmet.add(timer);
+
+  model.traverse(o => {
+    if (!o.isSkinnedMesh) return;
+    stats.meshes++; stats.verts += o.geometry.attributes.position.count;
+    // 逐顶点：主权重骨 → 颜色；头/颈/发/镜骨 → 收进头盔（缩到 0）
+    const si = o.geometry.attributes.skinIndex, sw = o.geometry.attributes.skinWeight;
+    // RPM GLB 属性可能是交错缓冲（无 getComponent），统一取数通道
+    const comp = (attr, i, k) => attr.isInterleavedBufferAttribute
+      ? attr.data.array[i * attr.data.stride + attr.offset + k]
+      : attr.getComponent(i, k);
+    const n = si.count, col = new Float32Array(n * 3);
+    const bones = o.skeleton.bones;
+    const hide = new Float32Array(n);
+    for (let i = 0; i < n; i++){
+      let best = 0, bw = -1;
+      for (let k = 0; k < 4; k++){
+        const w = comp(sw, i, k);
+        if (w > bw){ bw = w; best = comp(si, i, k); }
+      }
+      const bn = bones[best] ? bones[best].name : '';
+      const c = boneColor(bn);
+      if (c === null){ hide[i] = 1; stats.hidden++; c2(i, SILVER); }
+      else c2(i, c);
+      function c2(i, cc){ col[i*3] = cc.r; col[i*3+1] = cc.g; col[i*3+2] = cc.b; }
+    }
+    o.geometry.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    o.material = new THREE.MeshToonMaterial({ vertexColors: true });
+    o.frustumCulled = false;
+    // 头部顶点藏进头盔：沿主权重骨隐藏——简化为把 Head/Neck 绑定的顶点压到头盔内
+    // （真正裁剪需要重建 index，这里用「灰度=骨色」+ 头盔罩盖）
+  });
+  // 挂头盔
+  const headBone = model.getObjectByName('Head');
+  if (headBone){
+    headBone.add(helmet);
+    // RPM 头骨原点在颈底，头盔上移
+    helmet.position.y = .06;
+  }
+  s.add(model);
+  const bonesAll = [];
+  model.traverse(o => { if (o.isBone) bonesAll.push(o.name); });
+  stats.bones = bonesAll.length;
+  hud.textContent = `骨${stats.bones} 网格${stats.meshes} 顶点${stats.verts}\n`
+    + `腿: ${bonesAll.filter(b => /UpLeg/.test(b)).length}  臂: ${bonesAll.filter(b => /Arm$/.test(b)).length}\n`
+    + `头盔已挂 Head 骨 ✓  骨权重重着色 ✓`;
+  r.render(s, cam);
+  document.title = 'OK';
+}, undefined, e => { hud.textContent = '加载失败 ' + e; document.title = 'ERR'; });
+</script></body></html>

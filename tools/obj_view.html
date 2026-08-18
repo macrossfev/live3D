@@ -1,0 +1,32 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0}</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+import * as THREE from 'three';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+window.__st = { webgl: false, loaded: false, meshes: 0, verts: 0, err: '' };
+try {
+  const r = new THREE.WebGLRenderer({antialias:true});
+  r.setSize(460,820); document.body.appendChild(r.domElement);
+  window.__st.webgl = !!r.getContext();
+  const s = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(35, 460/820, .1, 50); cam.position.set(0, 0.95, 5.6); cam.lookAt(0, 0.93, 0);
+  s.add(new THREE.AmbientLight(0xffffff, .8));
+  const d = new THREE.DirectionalLight(0xffffff, 1.5); d.position.set(2,3,4); s.add(d);
+  s.add(new THREE.GridHelper(4, 12));
+  new OBJLoader().load('../assets/output/Ultraman_Classic.obj', o => {
+    s.add(o);
+    o.traverse(m => { if (m.isMesh){ window.__st.meshes++; window.__st.verts += m.geometry.attributes.position.count; } });
+    const bb = new THREE.Box3().setFromObject(o);
+    window.__st.bbox = [bb.min.x,bb.min.y,bb.min.z,bb.max.x,bb.max.y,bb.max.z].map(v=>+v.toFixed(2));
+    r.render(s, cam);
+    window.__st.loaded = true;
+    // 非黑像素统计（确认真的画出了东西）
+    const gl = r.getContext();
+    const px = new Uint8Array(460*820*4); gl.readPixels(0,0,460,820,gl.RGBA,gl.UNSIGNED_BYTE,px);
+    let lit = 0; for (let i=0;i<px.length;i+=4) if (px[i]+px[i+1]+px[i+2] > 30) lit++;
+    window.__st.litPct = +(100*lit/(460*820)).toFixed(1);
+    document.title = 'OK';
+  }, undefined, e => { window.__st.err = ''+e; document.title = 'ERR'; });
+} catch(e){ window.__st.err = ''+e; document.title = 'ERR'; }
+</script></body></html>

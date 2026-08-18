@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>初代奥特曼 · Mixamo 预览</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b0e14;color:#dce3ee;font-family:sans-serif;overflow:hidden}
+  #hud{position:fixed;left:16px;top:16px;z-index:2;max-width:320px}
+  h1{font-size:18px;margin:0 0 6px}
+  p{font-size:13px;line-height:1.55;color:#9aacbf;margin:0 0 8px}
+  code{background:#1a2230;padding:1px 5px;border-radius:4px;color:#9fd}
+  .ok{color:#7d6}
+</style>
+</head>
+<body>
+<div id="hud">
+  <h1>初代奥特曼 T-pose</h1>
+  <p>拖拽旋转 · 滚轮缩放<br>
+  上传 Mixamo 用 <code>assets/output/Ultraman_Classic.zip</code>
+  （OBJ+MTL）或 <code>.fbx</code></p>
+  <p id="st">加载中…</p>
+</div>
+<script type="importmap">{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const st = t => document.getElementById('st').textContent = t;
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setClearColor(0x0b0e14);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 0.05, 40);
+cam.position.set(1.6, 1.25, 3.6);
+const ctrl = new OrbitControls(cam, renderer.domElement);
+ctrl.target.set(0, 0.95, 0);
+ctrl.update();
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const key = new THREE.DirectionalLight(0xffffff, 1.15);
+key.position.set(2.2, 3.4, 4); scene.add(key);
+const fill = new THREE.DirectionalLight(0x88aaff, 0.35);
+fill.position.set(-3, 1.5, -2); scene.add(fill);
+const grid = new THREE.GridHelper(4, 16, 0x334, 0x1a2230);
+scene.add(grid);
+
+const mtl = new MTLLoader();
+mtl.setPath('../assets/output/');
+mtl.load('Ultraman_Classic.mtl', mats => {
+  mats.preload();
+  const obj = new OBJLoader();
+  obj.setMaterials(mats);
+  obj.setPath('../assets/output/');
+  obj.load('Ultraman_Classic.obj', o => {
+    let tris = 0;
+    o.traverse(m => {
+      if (m.isMesh) {
+        m.material.side = THREE.DoubleSide;
+        const g = m.geometry;
+        if (g.index) tris += g.index.count / 3;
+        else tris += g.attributes.position.count / 3;
+      }
+    });
+    scene.add(o);
+    const bb = new THREE.Box3().setFromObject(o);
+    st(`✓ ${tris|0} 三角  高 ${(bb.max.y-bb.min.y).toFixed(2)}m  翼展 ${(bb.max.x-bb.min.x).toFixed(2)}m`);
+  }, undefined, e => st('OBJ 失败 ' + e));
+}, undefined, e => st('MTL 失败 ' + e));
+
+addEventListener('resize', () => {
+  cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+(function tick(){ requestAnimationFrame(tick); renderer.render(scene, cam); })();
+</script>
+</body>
+</html>
