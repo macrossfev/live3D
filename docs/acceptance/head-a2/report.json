@@ -1,0 +1,82 @@
+{
+ "sample": "a2",
+ "gates_front": {
+  "file": "docs/acceptance/head-a2/front.png",
+  "view": "front",
+  "size": "1240x1800",
+  "gates": {
+   "G2": {
+    "pass": false,
+    "bands": {
+     "head": 0.089,
+     "shoulder": 0.009,
+     "chest": 0.1,
+     "waist": 0.069,
+     "pelvis": 0.001,
+     "thigh": 0.0,
+     "shin": 0.114,
+     "foot": 0.043
+    }
+   },
+   "G3": {
+    "pass": false,
+    "red_by_band": {
+     "shoulder": 0.0023,
+     "chest": 0.0927,
+     "pelvis": 0.0,
+     "shin": 0.0003
+    }
+   },
+   "G5": {
+    "pass": true,
+    "skin_pct": 0.0
+   },
+   "G6": {
+    "pass": true,
+    "figure_mode_share": 0.179,
+    "mean_lum": 71.6
+   }
+  },
+  "figure_bbox": [
+   243,
+   1799
+  ]
+ },
+ "views": {
+  "back": {
+   "G2": false,
+   "G5": true,
+   "G6": true
+  },
+  "left": {
+   "G2": false,
+   "G5": true,
+   "G6": true
+  },
+  "right": {
+   "G2": false,
+   "G5": true,
+   "G6": true
+  },
+  "q34_left": {
+   "G2": false,
+   "G5": true,
+   "G6": true
+  },
+  "q34_right": {
+   "G2": false,
+   "G5": true,
+   "G6": true
+  },
+  "top": {
+   "G2": false,
+   "G5": true,
+   "G6": true
+  },
+  "bottom": {
+   "G2": false,
+   "G5": true,
+   "G6": true
+  }
+ }
+}

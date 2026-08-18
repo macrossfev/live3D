@@ -1,10 +1,9 @@
 <!DOCTYPE html><html><head><meta charset="utf-8">
-<title>live3D · 头部样品台</title>
+<title>RPM 奥特曼 · T-pose 立绘蒙皮 v3</title>
 <style>body{margin:0;background:#0e1118;color:#dde;overflow:hidden}
 #hud{position:fixed;top:8px;left:8px;font:12px/1.6 monospace;color:#7ef;white-space:pre;z-index:9}
 #tip{position:fixed;bottom:8px;left:8px;font:12px monospace;color:#567}
-#ref{position:fixed;top:8px;right:8px;border:1px solid #345;z-index:9}body.shooting #hud, body.shooting #tip, body.shooting #ref{display:none}
-</style>
+#ref{position:fixed;top:8px;right:8px;border:1px solid #345;z-index:9}</style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head><body><div id="hud">加载中…</div><div id="tip">拖动旋转 · 滚轮缩放</div>
 <img id="ref" src="../assets/refs/classic.png" height="360" alt="参考立绘">
@@ -20,7 +19,7 @@ const s = new THREE.Scene();
 s.background = new THREE.Color(.05, .055, .07);
 const cam = new THREE.PerspectiveCamera(32, W / H, .1, 50);
 s.add(new THREE.AmbientLight(0xffffff, .9));
-const sun = new THREE.DirectionalLight(0xffffff, 2.6); sun.position.set(.5, 2.8, 5); s.add(sun);
+const sun = new THREE.DirectionalLight(0xffffff, 2.4); sun.position.set(2, 3, 4); s.add(sun);
 const rim = new THREE.DirectionalLight(0x88bbff, .9); rim.position.set(-2, 2, -3); s.add(rim);
 s.add(new THREE.GridHelper(4, 10));
 const hud = document.getElementById('hud');
@@ -70,39 +69,6 @@ function backColor(x, h, bones){
 }
 
 let mixer = null;
-const HEAD = new URLSearchParams(location.search).get('head') || 'a2';
-const VIEWS = {
-  front: [0, .95, 4.3], back: [0, .95, -4.3], left: [-4.3, .95, 0], right: [4.3, .95, 0],
-  q34_left: [-3.0, 1.1, 3.0], q34_right: [3.0, 1.1, 3.0],
-  top: [0, 4.0, .001], bottom: [0, -2.6, 3.0],
-};
-let frozen = false;
-let __vcMat = null;
-window.__freeze = () => {
-  // Boxing t=0 是深度蹲伏（腿折进躯干高度带）——验收要站姿：
-  // 停掉全部动作回到绑定姿势（RPM A-pose 站立）
-  if (mixer){ mixer.stopAllAction(); mixer.update(0); }
-  frozen = true; document.body.classList.add('shooting');
-  // 实测：mixer.setTime/update 后早期材质失效——冻结时重建 vertexColors 材质再渲染
-  if (window.__model){
-    window.__model.traverse(o => {
-      if (o.isSkinnedMesh && o.geometry.attributes.color){
-        o.material = new THREE.MeshToonMaterial({ vertexColors: true });
-      }
-    });
-  }
-  r.render(s, cam);
-  return 'frozen';
-};
-window.__setcam = v => {
-  const p = VIEWS[v]; if (!p) return 'no view ' + v;
-  cam.position.set(...p);
-  cam.lookAt(0, v === 'top' ? 1.55 : .95, 0);
-  r.render(s, cam);
-  return 'cam=' + v;
-};
-window.__dbg = { get r(){ return r; }, get s(){ return s; }, get cam(){ return cam; }, get mixerM(){ return mixer; } };
-window.__THREE = null;
 async function main(){
   await refReady;
   refCtx.drawImage(refImg, 0, 0, REF_W, REF_H);
@@ -235,100 +201,51 @@ async function main(){
     body.frustumCulled = false;
   }
 
-  // ---------- 头部方案（?head=a1|a2|none） ----------
-  const headBone2 = B('Head');
-  let headInfo = 'none';
-  if (HEAD === 'a1' && headMesh){
-    // A1 UV 重绘：UV 三角形填充分区色 + 眼睛椭圆，回贴保留人头几何
-    headMesh.updateWorldMatrix(true, false);
-    const hg = headMesh.geometry;
-    const hw = worldOf(headMesh);
-    const hIdx = hg.index.array;
-    const uvA = hg.attributes.uv;
-    const saneH = i => { const y = hw[i*3+1]; return y > 1.2 && y < 2.2 && Math.abs(hw[i*3]) < .4; };
-    const A = 1024;
-    const atlas = document.createElement('canvas'); atlas.width = A; atlas.height = A;
-    const actx = atlas.getContext('2d');
-    actx.fillStyle = '#c3c9d4'; actx.fillRect(0, 0, A, A);
-    const zone = (x, y, z) => {
-      if (z < head.z - .01 || Math.abs(x) > .072) return RED;
-      if (y < head.y - .055) return RED;
-      return SILVER;
-    };
-    const css = c => `rgb(${c.map(v => Math.round(v * 255)).join(',')})`;
-    for (let t = 0; t < hIdx.length; t += 3){
-      const a = hIdx[t], b2 = hIdx[t+1], c2 = hIdx[t+2];
-      if (!(saneH(a) && saneH(b2) && saneH(c2))) continue;
-      const cx = (hw[a*3] + hw[b2*3] + hw[c2*3]) / 3;
-      const cy = (hw[a*3+1] + hw[b2*3+1] + hw[c2*3+1]) / 3;
-      const cz = (hw[a*3+2] + hw[b2*3+2] + hw[c2*3+2]) / 3;
-      actx.fillStyle = css(zone(cx, cy, cz));
-      actx.beginPath();
-      actx.moveTo(comp(uvA, a, 0) * A, (1 - comp(uvA, a, 1)) * A);
-      actx.lineTo(comp(uvA, b2, 0) * A, (1 - comp(uvA, b2, 1)) * A);
-      actx.lineTo(comp(uvA, c2, 0) * A, (1 - comp(uvA, c2, 1)) * A);
-      actx.closePath(); actx.fill();
-    }
-    const eyeT = (336 - 310) / (336 - 268);
-    const eyeH2 = head.y + (headMaxY - head.y) * eyeT;
+  // ---------- 组合式头盔（挂 Head 骨，随头动；克隆壳方案因局部写回数学不稳放弃） ----------
+  const mSil = new THREE.MeshToonMaterial({ color: 0xbfd0de });
+  const mRed2 = new THREE.MeshToonMaterial({ color: 0xc41e28 });
+  const mDark = new THREE.MeshToonMaterial({ color: 0x23262e });
+  const glow = c => new THREE.MeshBasicMaterial({ color: c });
+  const headBone = B('Head');
+  if (headBone){
+    const g2 = new THREE.Group();
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(.104, 26, 20), mSil);
+    skull.scale.set(.94, 1.14, 1.04); g2.add(skull);
+    const back = new THREE.Mesh(new THREE.SphereGeometry(.098, 22, 16), mSil);
+    back.position.set(0, .012, -.022); back.scale.set(.94, 1.04, 1.06); g2.add(back);
+    const jawRed = new THREE.Mesh(new THREE.SphereGeometry(.086, 22, 16), mRed2);
+    jawRed.position.set(0, -.055, .024); jawRed.scale.set(1.0, .62, 1.0); g2.add(jawRed);
+    const chin = new THREE.Mesh(new THREE.SphereGeometry(.052, 16, 12), mSil);
+    chin.position.set(0, -.075, .052); chin.scale.set(.9, .6, .9); g2.add(chin);
     for (const sd of [-1, 1]){
-      const tx = sd * .042, ty = eyeH2, tz = head.z + .09;
-      let bestI = -1, bd = 1e9;
-      for (let i = 0; i < hg.attributes.position.count; i++){
-        if (!saneH(i)) continue;
-        const dd = (hw[i*3]-tx)**2 + (hw[i*3+1]-ty)**2 + (hw[i*3+2]-tz)**2;
-        if (dd < bd){ bd = dd; bestI = i; }
-      }
-      if (bestI < 0) continue;
-      const u = comp(uvA, bestI, 0), v = comp(uvA, bestI, 1);
-      actx.save();
-      actx.translate(u * A, (1 - v) * A);
-      actx.rotate(sd * .3);
-      actx.fillStyle = '#fff6c0';
-      actx.beginPath();
-      actx.ellipse(0, 0, A * .035, A * .011, 0, 0, Math.PI * 2);
-      actx.fill();
-      actx.restore();
+      const socket = new THREE.Mesh(new THREE.SphereGeometry(.033, 14, 10), mDark);
+      socket.position.set(sd * .047, .010, .079);
+      socket.scale.set(1.62, .52, .60); socket.rotation.z = sd * .30; g2.add(socket);
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(.030, 14, 10), glow(0xfff6c0));
+      eye.position.set(sd * .047, .011, .085);
+      eye.scale.set(1.5, .42, .55); eye.rotation.z = sd * .30; g2.add(eye);
+      const ear = new THREE.Mesh(new THREE.CylinderGeometry(.017, .017, .014, 14), mSil);
+      ear.rotation.z = Math.PI / 2; ear.position.set(sd * .098, .006, .002); g2.add(ear);
+      const pit = new THREE.Mesh(new THREE.CylinderGeometry(.011, .011, .016, 12), mDark);
+      pit.rotation.z = Math.PI / 2; pit.position.set(sd * .099, .006, .002); g2.add(pit);
     }
-    const tex = new THREE.CanvasTexture(atlas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.flipY = false;
-    headMesh.material = new THREE.MeshToonMaterial({ map: tex });
-    headMesh.frustumCulled = false;
-    headMesh.visible = true;
-    headInfo = 'a1';
-  } else if (HEAD === 'a2' && headBone2){
-    if (headMesh) headMesh.visible = false;
-    const glb = await new Promise((res, rej) => new GLTFLoader().load('../assets/output/helmet_a2.glb', res, undefined, rej));
-    const helmet = glb.scene;
-    const hw2 = worldOf(headMesh || body);
-    let cy2 = head.y + .02, cz2 = .012, n2 = 0;
-    if (headMesh){
-      for (let i = 0; i < headMesh.geometry.attributes.position.count; i++){
-        const y = hw2[i*3+1];
-        if (y > 1.2 && y < 2.2 && Math.abs(hw2[i*3]) < .4){ cy2 += hw2[i*3+1]; cz2 += hw2[i*3+2]; n2++; }
-      }
-      if (n2){ cy2 /= (n2 + 1); cz2 /= (n2 + 1); }
-    }
-    const wp = new THREE.Vector3(0, cy2, cz2);
-    headBone2.worldToLocal(wp);
-    helmet.position.copy(wp);
-    headBone2.add(helmet);
-    headInfo = 'a2';
-  } else {
-    if (headMesh) headMesh.visible = false;
+    const ridge = new THREE.Mesh(new THREE.SphereGeometry(.09, 18, 12), mSil);
+    ridge.scale.set(.115, .052, 1.32); ridge.position.set(0, .093, -.012); g2.add(ridge);
+    const brow = new THREE.Mesh(new THREE.SphereGeometry(.035, 12, 10), mSil);
+    brow.scale.set(.34, .5, 1.1); brow.position.set(0, .058, .088); g2.add(brow);
+    const mouth = new THREE.Mesh(new THREE.BoxGeometry(.030, .004, .012), mDark);
+    mouth.position.set(0, -.052, .094); g2.add(mouth);
+    g2.position.y = .055;
+    headBone.add(g2);
   }
 
-  // ---------- 隐藏其余裸网格 ----------
+  // ---------- 隐藏其余全部裸网格（头原件/衣物/毛发/重复件） ----------
   let hidden = 0;
   model.traverse(o => {
-    if (o.isSkinnedMesh && o !== body && !(HEAD === 'a1' && o === headMesh)){ o.visible = false; hidden++; }
+    if (o.isSkinnedMesh && o !== body){ o.visible = false; hidden++; }
   });
 
   // ---------- 计时器（挂 Spine2 胸口） ----------
-  const mSil = new THREE.MeshToonMaterial({ color: 0xbfd0de });
-  const mDark = new THREE.MeshToonMaterial({ color: 0x23262e });
-  const glow = c => new THREE.MeshBasicMaterial({ color: c });
   const spine2B = B('Spine2');
   if (spine2B){
     let chestFront = spine2.z;
@@ -345,7 +262,7 @@ async function main(){
   }
 
   window.__model = model;
-  window.__stats = { stage: 'rigged', head: headInfo, body: body.name,
+  window.__stats = { stage: 'rigged', body: body.name, helmet: !!headBone,
                      hidden, SX: +SX.toFixed(0), headTop: +headMaxY.toFixed(2),
                      anchors: Z2Y.map(a => +a[0].toFixed(2)) };
 
@@ -364,15 +281,11 @@ async function main(){
   const clip2 = new THREE.AnimationClip('boxing', clip.duration, tracks);
   mixer = new THREE.AnimationMixer(model);
   mixer.clipAction(clip2).play();
-  // 实测玄学：main() 早期创建的 vertexColors 材质不渲染（早期 shader 编译态坏了），
-  // 全部资源加载完成后重建同款材质即恢复。原因未深究，勿在加载中途渲染。
-  body.material = new THREE.MeshToonMaterial({ vertexColors: true });
-  if (HEAD === 'a1' && headMesh) headMesh.material = new THREE.MeshToonMaterial({ map: headMesh.material.map });
   window.__stats.stage = 'animating';
-  hud.textContent = `head=${headInfo} SX=${SX.toFixed(0)} 隐藏${hidden}\n空格冻结摆拍 · 拳击播放中`;
+  hud.textContent = `T-pose 立绘蒙皮 v4\n身体投影上色（SX=${SX.toFixed(0)} 锚点${Z2Y.length}）\n`
+    + `组合头盔挂Head骨 · 隐藏裸网格${hidden} · 拳击播放中`;
   document.title = 'OK';
 }
-window.__THREE = THREE;
 main().catch(e => { hud.textContent = '失败 ' + (e.message || e); window.__stats = { stage: 'error', err: '' + e }; document.title = 'ERR'; });
 
 window.__api = {
@@ -383,8 +296,8 @@ window.__api = {
 const clock = new THREE.Clock();
 (function loop(){
   requestAnimationFrame(loop);
-  if (mixer && !frozen) mixer.update(clock.getDelta());
-  if (!frozen) placeCam();          // 冻结摆拍时不得覆盖 __setcam 机位
+  if (mixer) mixer.update(clock.getDelta());
+  placeCam();
   r.render(s, cam);
 })();
 </script></body></html>
