@@ -1,0 +1,41 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>迪迦 · DG 贴图版 3D</title>
+<style>body{margin:0;background:#0e1118;color:#dde;overflow-x:hidden}
+#hud{position:fixed;top:8px;left:8px;font:12px/1.6 monospace;color:#7ef;white-space:pre;z-index:9}
+#tip{position:fixed;bottom:8px;left:8px;font:12px monospace;color:#567;z-index:9}
+</style>
+<!-- 本地开发 jsdelivr；线上同源可切 /lib -->
+<script type="importmap">{"imports":{
+"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+"three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}</script>
+</head><body><div id="hud">加载迪迦模型…</div><div id="tip">拖动旋转 · 滚轮缩放 · 自动慢转</div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+const W = 620, H = 900;   // 本机玄学：画布 1280 宽会瞎，620 稳
+const r = new THREE.WebGLRenderer({ antialias: true });
+r.setSize(W, H); document.body.appendChild(r.domElement);
+const s = new THREE.Scene();
+s.background = new THREE.Color(.05, .055, .07);
+const cam = new THREE.PerspectiveCamera(32, W / H, .1, 60);
+s.add(new THREE.AmbientLight(0xffffff, .9));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(2, 3, 5); s.add(sun);
+const rim = new THREE.DirectionalLight(0x88bbff, .8); rim.position.set(-2, 2, -3); s.add(rim);
+s.add(new THREE.GridHelper(4, 10));
+const ctl = new OrbitControls(cam, r.domElement);
+ctl.autoRotate = true; ctl.autoRotateSpeed = 1.2;
+ctl.target.set(0, .95, 0);
+cam.position.set(0, 1.2, 3.2);
+new GLTFLoader().load('../download/DG/FBX/tiga_textured.glb', g => {
+  s.add(g.scene);
+  const box = new THREE.Box3().setFromObject(g.scene);
+  const c = box.getCenter(new THREE.Vector3());
+  g.scene.position.x -= c.x; g.scene.position.z -= c.z;   // 居中
+  document.getElementById('hud').textContent =
+    '迪迦 · DG 贴图版（RGB+发光+法线内嵌）\n拖转查看 · 慢速自转中';
+  document.title = 'OK';
+}, undefined, e => { document.getElementById('hud').textContent = '加载失败 ' + e; document.title = 'ERR'; });
+(function loop(){ requestAnimationFrame(loop); ctl.update(); r.render(s, cam); })();
+</script></body></html>
