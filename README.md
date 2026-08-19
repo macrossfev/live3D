@@ -3,6 +3,10 @@
 > 从 `ultraman-web` 的虚拟人管线拆分而来 · 2026-08-18 建项
 > **线上项目页：<https://page.sui.pics/a/live3d-dist-06a0685f3514417e/>**（工具演示 + 文档在线版）
 > GitHub：<https://github.com/macrossfev/live3D>
+>
+> **📄 文档导航（新接手按序读）**：
+> ① 本 README → ② `docs/HANDOFF_NEXT.md`（下一棒任务书）→ ③ `docs/SOP_mixamo_pipeline.md`（操作手册+12坑）
+> → ④ `docs/WORKLOG.md`（三篇轮次日志）。历史存档：`HANDOFF_GLM*.md`、`SOP_pipeline.md`（2D 投影旧路线，已弃）。
 > 定位：**输入一张 2D 角色立绘（T-pose 透明 PNG），输出能上传 Mixamo 自动绑骨、
 > 并被 Mixamo 动画库驱动的 3D 模型（FBX/GLB）**。
 

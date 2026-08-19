@@ -1,6 +1,8 @@
 # 虚拟人（RPM → 奥特曼）制作与验收 SOP
 
 > 版本 v1.0 · 2026-08-18
+> ⚠️ **历史存档**：本文属于已被取代的「RPM 换体 + 2D 立绘投影」路线。
+> 现行方案见 `SOP_mixamo_pipeline.md`。本文的验收门 G1-G7 思路仍可复用。
 > 范围：以 Ready Player Me 全身模型为骨架载体，按 T-pose 立绘制作奥特曼外观，
 > 最终接入 ultraman-web 游戏引擎。
 > 姊妹文档：`SOP_Mixamo建模.md`（Blender 建模侧）
